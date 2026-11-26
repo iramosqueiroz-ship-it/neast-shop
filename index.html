@@ -1,0 +1,175 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Neast Shop | Tecnologia e Ofertas</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#101014;color:#fff;font-family:Arial,sans-serif}
+header{padding:22px 7%;background:#18181f;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:15px}
+.logo{font-size:26px;font-weight:bold;color:#a78bfa}
+.search{padding:12px;border-radius:8px;border:1px solid #444;background:#25252e;color:white;width:260px}
+nav{padding:18px 7%;display:flex;gap:20px;flex-wrap:wrap;background:#20202a}
+nav a{color:#ddd;text-decoration:none}
+.hero{padding:65px 7%;background:linear-gradient(110deg,#30145c,#111827)}
+.hero h1{font-size:38px;margin-bottom:12px}
+.hero p{color:#ddd;font-size:17px}
+main{padding:35px 7%}
+h2{margin-bottom:22px}
+#products{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:20px}
+.product{background:#20202a;border:1px solid #333;border-radius:12px;padding:16px}
+.product img{width:100%;height:180px;object-fit:contain;background:#fff;border-radius:8px;margin-bottom:15px}
+.product h3{font-size:17px;margin-bottom:12px}
+.price{font-size:21px;color:#a78bfa;font-weight:bold}
+.old{color:#999;text-decoration:line-through;font-size:14px;margin-bottom:7px}
+.product a{display:block;text-align:center;background:#7c3aed;color:white;padding:12px;border-radius:8px;text-decoration:none;margin-top:15px}
+.message{color:#aaa;padding:25px 0}
+footer{background:#18181f;padding:30px 7%;color:#aaa;margin-top:50px}
+</style>
+</head>
+<body>
+
+<header>
+<div class="logo">NEAST SHOP</div>
+<input class="search" id="search" placeholder="Pesquisar produtos...">
+</header>
+
+<nav id="categories">
+<a href="#" data-category="">Todos</a>
+</nav>
+
+<section class="hero">
+<h1>O melhor da tecnologia está aqui.</h1>
+<p>Encontre ofertas, eletrônicos, games e muito mais.</p>
+</section>
+
+<main>
+<h2>Produtos em destaque</h2>
+<div id="products"><p class="message">Carregando produtos...</p></div>
+</main>
+
+<footer>
+<p>Neast Shop © 2026 - Loja de ofertas e produtos afiliados.</p>
+<p>Os produtos são vendidos pelos respectivos marketplaces.</p>
+</footer>
+
+<script>
+const SUPABASE_URL = "https://qigiftlymkmgniovowrm.supabase.co/rest/v1/";
+const SUPABASE_KEY = "sb_publishable_xn8JmcGYM7r50-F4pgkcUQ_uDWkOdiD";
+
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let allProducts = [];
+let selectedCategory = "";
+
+async function loadCategories(){
+  const {data,error} = await db.from("categories").select("*").order("name");
+  if(error) return console.error(error);
+
+  const nav = document.getElementById("categories");
+  data.forEach(category=>{
+    const link = document.createElement("a");
+    link.href = "#";
+    link.textContent = category.name;
+    link.dataset.category = category.id;
+    link.onclick = e=>{
+      e.preventDefault();
+      selectedCategory = category.id;
+      renderProducts();
+    };
+    nav.appendChild(link);
+  });
+}
+
+async function loadProducts(){
+  const {data,error} = await db
+    .from("products")
+    .select("*")
+    .eq("is_published",true)
+    .order("created_at",{ascending:false});
+
+  const container = document.getElementById("products");
+
+  if(error){
+    container.innerHTML = '<p class="message">Não foi possível carregar os produtos.</p>';
+    console.error(error);
+    return;
+  }
+
+  allProducts = data || [];
+  renderProducts();
+}
+
+function renderProducts(){
+  const search = document.getElementById("search").value.toLowerCase();
+  const container = document.getElementById("products");
+
+  const filtered = allProducts.filter(p=>{
+    const matchesName = (p.name || "").toLowerCase().includes(search);
+    const matchesCategory = !selectedCategory || p.category_id === selectedCategory;
+    return matchesName && matchesCategory;
+  });
+
+  container.innerHTML = "";
+
+  if(!filtered.length){
+    container.innerHTML = '<p class="message">Nenhum produto encontrado.</p>';
+    return;
+  }
+
+  filtered.forEach(p=>{
+    const card = document.createElement("article");
+    card.className = "product";
+
+    const img = document.createElement("img");
+    img.src = p.image_url || "";
+    img.alt = p.name;
+    img.onerror = ()=>img.style.display="none";
+
+    const title = document.createElement("h3");
+    title.textContent = p.name;
+
+    const old = document.createElement("p");
+    old.className = "old";
+    old.textContent = p.old_price ? "R$ "+Number(p.old_price).toFixed(2).replace(".",",") : "";
+
+    const price = document.createElement("p");
+    price.className = "price";
+    price.textContent = p.current_price ? "R$ "+Number(p.current_price).toFixed(2).replace(".",",") : "Consulte a oferta";
+
+    const button = document.createElement("a");
+    button.href = p.affiliate_url;
+    button.target = "_blank";
+    button.rel = "noopener noreferrer sponsored";
+    button.textContent = "Ver oferta";
+
+    card.append(img,title,old,price,button);
+    container.appendChild(card);
+  });
+}
+
+document.getElementById("search").addEventListener("input",renderProducts);
+
+document.querySelector('nav a[data-category=""]').onclick = e=>{
+  e.preventDefault();
+  selectedCategory = "";
+  renderProducts();
+};
+
+async function init(){
+  if(SUPABASE_URL.startsWith("COLE_") || SUPABASE_KEY.startsWith("COLE_")){
+    document.getElementById("products").innerHTML =
+      '<p class="message">Configure as credenciais do Supabase.</p>';
+    return;
+  }
+  await loadCategories();
+  await loadProducts();
+}
+
+init();
+</script>
+</body>
+</html>
