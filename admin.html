@@ -1,0 +1,81 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Neast Shop | Administração</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#101014;color:white;font-family:Arial,sans-serif;padding:30px}
+main{max-width:650px;margin:50px auto;background:#20202a;padding:25px;border-radius:14px}
+h1{color:#a78bfa}
+input,button{width:100%;padding:13px;margin:9px 0;border-radius:7px;border:1px solid #444}
+input{background:#15151b;color:white}
+button{background:#7c3aed;color:white;border:0;font-weight:bold;cursor:pointer}
+#panel{display:none}
+#status{color:#bbb}
+</style>
+</head>
+<body>
+<main>
+<h1>NEAST SHOP</h1>
+<h2>Painel administrativo</h2>
+
+<section id="login">
+<p>Entre com sua conta de administrador.</p>
+<input id="email" type="email" placeholder="E-mail">
+<input id="password" type="password" placeholder="Senha">
+<button onclick="login()">Entrar</button>
+<p id="status"></p>
+</section>
+
+<section id="panel">
+<h2>Bem-vindo à administração</h2>
+<p>Login realizado com sucesso.</p>
+<button onclick="logout()">Sair</button>
+</section>
+</main>
+
+<script>
+const SUPABASE_URL = "SUA_PROJECT_URL";
+const SUPABASE_KEY = "SUA_PUBLISHABLE_KEY";
+
+const db = window.supabase.createClient(https://qigiftlymkmgniovowrm.supabase.co/rest/v1/,sb_publishable_xn8JmcGYM7r50-F4pgkcUQ_uDWkOdiD);
+
+async function login(){
+ const email=document.getElementById("email").value;
+ const password=document.getElementById("password").value;
+ const status=document.getElementById("status");
+
+ status.textContent="Verificando acesso...";
+
+ const {error}=await db.auth.signInWithPassword({email,password});
+
+ if(error){
+   status.textContent="Erro: "+error.message;
+   return;
+ }
+
+ showPanel();
+}
+
+async function showPanel(){
+ const {data}=await db.auth.getSession();
+
+ if(data.session){
+   document.getElementById("login").style.display="none";
+   document.getElementById("panel").style.display="block";
+ }
+}
+
+async function logout(){
+ await db.auth.signOut();
+ location.reload();
+}
+
+showPanel();
+</script>
+</body>
+</html>
